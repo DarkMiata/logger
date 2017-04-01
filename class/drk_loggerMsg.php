@@ -6,13 +6,13 @@
  * @author global
  */
 class drk_loggerMsg {
-  
+
   private $msg;
   private $timestamp;
   private $type;
   private $msgHtml;
   // ========================================
-  
+
   // ========================================
 
   // ========================================
@@ -23,16 +23,28 @@ class drk_loggerMsg {
     $this->type       = $type;
   }
   // ========================================
-  
-  private msgToHtml() {
-  
-    
-    
+
+  private function msgToHtml() {
+
   }
-  
+  // ------------------------
+
   private function writeLogFile() {
-    
+
   }
-  
+  // ------------------------
+
+  private function msgToDB() {
+
+  }
+  // ------------------------
+
+  private function DBToMsg($pageIndex) {
+
+  }
+  // ------------------------
+
+
+
   // ========================================
 }
