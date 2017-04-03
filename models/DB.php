@@ -9,6 +9,7 @@ function DB_connexion() {
           . ';charset=utf8';
 
   $bdd = new PDO($bdd_co, DB_LOGIN, DB_PWD);
+  $bdd->setAttribute(PDO::ATTR_ERRMODE, pdo::ERRMODE_EXCEPTION);
 
   echo("connection BDD<br>");
   var_dump($bdd);

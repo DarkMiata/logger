@@ -1,6 +1,6 @@
 <?php
 
-require_once 'drk_loggerMsg.php';
+//require_once 'drk_loggerMsg.php';
 
 /**
  * Description of drk_logger
@@ -8,6 +8,11 @@ require_once 'drk_loggerMsg.php';
  * @author sam
  */
 class drk_logger {
+
+  const STD     = "std";
+  const WARN    = "warn";
+  const ERROR   = "err";
+  const FATAL   = "fat";
 
   private $name;
 
@@ -21,6 +26,9 @@ class drk_logger {
 
   // ========================================
 
+  private function get_name() {
+    return $this->name;
+  }
   private function get_DB_url() {
     if ($this->DB_state_init == FALSE) {
       trigger_error("get_DB_url ne peut être appelé:"
@@ -58,7 +66,7 @@ class drk_logger {
     }
   }
 
-    // ========================================
+  // ========================================
 
   private function set_DB($DB) {
     $this->DB = $DB;
@@ -80,10 +88,9 @@ class drk_logger {
   }
   private function set_DB_state_co($DB_state_co) {
     $this->DB_state_co = $DB_state_co;
-    return $this;
   }
-  
-        // ========================================
+
+  // ========================================
 
   function __construct($name) {
     $this->name = $name;
@@ -100,7 +107,11 @@ class drk_logger {
 
    public function std($text) {
 
-    $msg = new drk_loggerMsg($text, "std");
+    if ($this->DB_state_init == false) {
+      trigger_error("db non intialisé", E_USER_WARNING);
+    }
+
+    $this->DB_insertLog($text, $this::STD);
   }
   // ------------------------
   public function warn($text) {
@@ -109,18 +120,25 @@ class drk_logger {
       trigger_error("db non intialisé", E_USER_WARNING);
     }
 
-    $msg = new drk_loggerMsg($text, "warn");
-    echo ("warn - $text");
+    $this->DB_insertLog($text, $this::WARN);
   }
   // ------------------------
   public function fatal($text) {
 
-    $msg = new drk_loggerMsg($text, "fatal");
+    if ($this->DB_state_init == false) {
+      trigger_error("db non intialisé", E_USER_WARNING);
+    }
+
+    $this->DB_insertLog($text, $this::FATAL);
   }
   // ------------------------
   public function error($text) {
 
-    $msg = new drk_loggerMsg($text, "error");
+    if ($this->DB_state_init == false) {
+      trigger_error("db non intialisé", E_USER_WARNING);
+    }
+
+    $this->DB_insertLog($text, $this::ERROR);
   }
   // ------------------------
 
@@ -128,38 +146,41 @@ class drk_logger {
   // DB
 
   function DB_connexion() {
+
     $bdd_co = 'mysql:host='  . $this->get_DB_url()
             . ';dbname='     . $this->get_DB_name()
             . ';charset=utf8';
 
     try {
       $bdd = new PDO($bdd_co, $this->get_DB_login(), $this->get_DB_pwd());
+      $bdd->setAttribute(PDO::ATTR_ERRMODE, pdo::ERRMODE_EXCEPTION);
       $this->set_DB($bdd);
-      $this->DB_state_co = TRUE;
-      
+      //$this->DB_state_co = TRUE;
+
       return $bdd;
     }
-    catch(Exception $e) {
+    catch(PDOException $e) {
       $erTxt = "** Erreur de connexion à la DB **<br>"
               . $e->getMessage() . "<br>"
               . "login: '"  . $this->get_DB_login() . "'<br>"
               . "mdp: '"    . $this->get_DB_pwd()   . "'<br>"
               ;
-      
+
       echo($erTxt);
-      $this->DB_state_co = FALSE;
+      //$this->DB_state_co = FALSE;
     }
 
   }
   // ------------------------
 /**
- * 
+ *
  * @param type $DB_url
  * @param type $DB_name
  * @param type $DB_login
  * @param type $DB_pwd
  */
   public function DB_init($DB_url, $DB_name, $DB_login, $DB_pwd) {
+
     $this->set_DB_url($DB_url);
     $this->set_DB_name($DB_name);
     $this->set_DB_login($DB_login);
@@ -167,31 +188,50 @@ class drk_logger {
     $this->set_DB_state_init(TRUE);
   }
   // ------------------------
+  /**
+   *
+   * @param type $tableName
+   */
+  public function DB_createTable() {
 
-  public function DB_createTable($tableName) {
     $bdd = $this->DB_connexion();
-    
-    $reqSqlTxt =
-            "CREATE TABLE drklog_" . $tableName
-            . "("
-            . " 'id' INT PRIMARY KEY NOT NULL,"
-            . " 'message' TEXT NOT NULL,"
-            . " 'type' CHAR(4) NOT NULL,"
-            . " 'time' TIMESTAMP NOT NULL"
-            . ");"
-          ;
 
-    try {    
-      $reqSql = $bdd->query($reqSqlTxt);
-      echo "req:";
-      echo($bdd->errorInfo()[2]);
-    }
-    catch(Exception $e) {
-      echo ("erreur sql: " . $e->getMessage() . "<br>");
-    }
+    $reqSqlTxt = "CREATE TABLE drklog_" . $this->get_name()
+        . " ("
+        . " id INT NOT NULL AUTO_INCREMENT,"
+        . " message TEXT,"
+        . " type CHAR(4),"
+        . " time TIMESTAMP"
+        . ")"
+        . ";"
+    ;
+      $bdd->query($reqSqlTxt);
 
+//    try {
+//      $bdd->query($reqSqlTxt);
+//    }
+//    catch(PDOException $e) {
+//      echo ("erreur sql: <br>" . $e->getMessage() . "<br>");
+//      echo ("requete: <br>");
+//      echo ($reqSqlTxt);
+//    }
+
+  }
+  // ------------------------
+
+  private function DB_insertLog($text, $type) {
+
+    $text = addslashes($text);
+    $bdd = $this->DB_connexion();
+
+    $reqSqlTxt = "INSERT INTO drklog_" . $this->get_name()
+        . " (message, type, time)"
+        . " VALUES ('$text', '$type', NOW());"
+    ;
+
+    $bdd->query($reqSqlTxt);
   }
 
   // ========================================
- 
+
   }
