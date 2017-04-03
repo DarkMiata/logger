@@ -2,6 +2,30 @@
 
 //require_once 'drk_loggerMsg.php';
 
+
+
+// ========================================
+/**
+ * Retourne un timestamp sous forme de float
+ * avec virgule pour les millisecondes
+ * @return float
+ */
+function milliTimestamp() {
+  $time_array = explode(" ", microtime());
+
+  $milli      = $time_array[0];
+  $milli  = explode(".", $milli)[1];
+  $milli  = substr($milli, 0, 4);
+
+  $timestamp  = $time_array[1];
+
+  $result = $timestamp . "." . $milli;
+  $result = floatval($result);
+
+  return $result;
+}
+// ========================================
+
 /**
  * Description of drk_logger
  *
@@ -111,7 +135,7 @@ class drk_logger {
       trigger_error("db non intialisé", E_USER_WARNING);
     }
 
-    $this->DB_insertLog($text, $this::STD);
+    $this->DB_insertLog($text, $this::STD, milliTimestamp());
   }
   // ------------------------
   public function warn($text) {
@@ -120,7 +144,7 @@ class drk_logger {
       trigger_error("db non intialisé", E_USER_WARNING);
     }
 
-    $this->DB_insertLog($text, $this::WARN);
+    $this->DB_insertLog($text, $this::WARN, milliTimestamp());
   }
   // ------------------------
   public function fatal($text) {
@@ -129,7 +153,7 @@ class drk_logger {
       trigger_error("db non intialisé", E_USER_WARNING);
     }
 
-    $this->DB_insertLog($text, $this::FATAL);
+    $this->DB_insertLog($text, $this::FATAL, milliTimestamp());
   }
   // ------------------------
   public function error($text) {
@@ -138,7 +162,7 @@ class drk_logger {
       trigger_error("db non intialisé", E_USER_WARNING);
     }
 
-    $this->DB_insertLog($text, $this::ERROR);
+    $this->DB_insertLog($text, $this::ERROR, milliTimestamp());
   }
   // ------------------------
 
@@ -172,13 +196,13 @@ class drk_logger {
 
   }
   // ------------------------
-/**
- *
- * @param type $DB_url
- * @param type $DB_name
- * @param type $DB_login
- * @param type $DB_pwd
- */
+  /**
+  *
+  * @param type $DB_url
+  * @param type $DB_name
+  * @param type $DB_login
+  * @param type $DB_pwd
+  */
   public function DB_init($DB_url, $DB_name, $DB_login, $DB_pwd) {
 
     $this->set_DB_url($DB_url);
@@ -201,36 +225,86 @@ class drk_logger {
         . " id INT NOT NULL AUTO_INCREMENT,"
         . " message TEXT,"
         . " type CHAR(4),"
-        . " time TIMESTAMP"
+        . " time FLOAT"
         . ")"
         . ";"
     ;
-      $bdd->query($reqSqlTxt);
 
-//    try {
-//      $bdd->query($reqSqlTxt);
-//    }
-//    catch(PDOException $e) {
-//      echo ("erreur sql: <br>" . $e->getMessage() . "<br>");
-//      echo ("requete: <br>");
-//      echo ($reqSqlTxt);
-//    }
+    var_dump($reqSqlTxt);
 
+    $bdd->query($reqSqlTxt);
+
+    try {
+      $req = $bdd->query($reqSqlTxt);
+    }
+    catch (Exception $ex) {
+      throw new MyDatabaseException($ex->getMessage() , $ex->getCode());
+      echo "erreur PDO";
+    }
   }
   // ------------------------
 
-  private function DB_insertLog($text, $type) {
+  private function DB_insertLog($text, $type, $time) {
 
     $text = addslashes($text);
     $bdd = $this->DB_connexion();
 
     $reqSqlTxt = "INSERT INTO drklog_" . $this->get_name()
         . " (message, type, time)"
-        . " VALUES ('$text', '$type', NOW());"
+        . " VALUES ('$text', '$type', '$time');"
     ;
+
+    var_dump($reqSqlTxt);
 
     $bdd->query($reqSqlTxt);
   }
+  // ------------------------
+
+  /**
+   * Récupération des messages dans la DB
+   * @param type $index index du premier élément à afficher
+   *   (par rapport au dernier)
+   * @param type $count nombres d'éléments à afficher
+   * @return type
+   */
+  public function DB_read($index, $count) {
+
+    $bdd = $this->DB_connexion();
+
+    $reqSqlTxt = "SELECT"
+            . " FROM drklog_1"
+            . " ORDER BY time DESC"
+            . " LIMIT 5"
+            . ";"
+            ;
+
+    $msgs_array = $bdd->query($reqSqlTxt);
+
+    return $msgs_array;
+  }
+
+  // ========================================
+  // ========================================
+
+  public function logger() {
+
+    $log = new drk_logger("1");
+    $log->DB_init(DB_URL, DB_NAME, DB_LOGIN, DB_PWD);
+    $result = $log->DB_read(0, 5);
+
+    var_dump($result);
+  }
+
+/**
+ *  SELECT *
+ *  FROM drklog_1
+ *  ORDER BY time DESC
+ *  LIMIT 5
+ *
+ *
+ */
+
+
 
   // ========================================
 
