@@ -20,15 +20,12 @@ AUTO_INCREMENT=2
 
  */
 
-
 // ========================================
 
 function testLog() {
 
   $log = new drk_logger("1");
 
-  
-  
   $log->DB_init(DB_URL, DB_NAME, DB_LOGIN, DB_PWD);
   //$log->DB_createTable();
   $log->std("test");
@@ -36,7 +33,6 @@ function testLog() {
   $log->error("essai d'erreur");
   $log->fatal("essai de fatal error");
 }
-
 // ========================================
 
 testLog();

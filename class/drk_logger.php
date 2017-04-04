@@ -12,16 +12,20 @@
  */
 function milliTimestamp() {
   $time_array = explode(" ", microtime());
-  
+
   $milli      = $time_array[0];
   $milli  = explode(".", $milli)[1];
   $milli  = substr($milli, 0, 4);
-  
+
+  $milli      = $time_array[0];
+  $milli  = explode(".", $milli)[1];
+  $milli  = substr($milli, 0, 4);
+
   $timestamp  = $time_array[1];
 
   $result = $timestamp . "." . $milli;
   $result = floatval($result);
-  
+
   return $result;
 }
 // ========================================
@@ -196,13 +200,13 @@ class drk_logger {
 
   }
   // ------------------------
-/**
- *
- * @param type $DB_url
- * @param type $DB_name
- * @param type $DB_login
- * @param type $DB_pwd
- */
+  /**
+  *
+  * @param type $DB_url
+  * @param type $DB_name
+  * @param type $DB_login
+  * @param type $DB_pwd
+  */
   public function DB_init($DB_url, $DB_name, $DB_login, $DB_pwd) {
 
     $this->set_DB_url($DB_url);
@@ -229,16 +233,13 @@ class drk_logger {
         . ")"
         . ";"
     ;
+    var_dump($reqSqlTxt);
 
-          var_dump($reqSqlTxt);
-    
     $bdd->query($reqSqlTxt);
-      
-
 
     try {
       $req = $bdd->query($reqSqlTxt);
-    } 
+    }
     catch (Exception $ex) {
       throw new MyDatabaseException($ex->getMessage() , $ex->getCode());
       echo "erreur PDO";
@@ -257,10 +258,92 @@ class drk_logger {
     ;
 
     var_dump($reqSqlTxt);
-    
+
     $bdd->query($reqSqlTxt);
+  }
+  // ------------------------
+
+  /**
+   * Récupération des messages dans la DB
+   * @param type $index index du premier élément à afficher
+   *   (par rapport au dernier)
+   * @param type $count nombres d'éléments à afficher
+   * @return type
+   */
+  public function DB_read($index, $count) {
+
+    $bdd = $this->DB_connexion();
+
+    $reqSqlTxt = "SELECT *"
+            . " FROM drklog_1"
+            . " ORDER BY time DESC"
+            . " LIMIT $count"
+            . ";"
+            ;
+
+    $msgs_array = $bdd->query($reqSqlTxt)->fetchAll();
+
+    return $msgs_array;
+  }
+  // ------------------------
+  public function icon($type) {
+
+    switch ($type) {
+      case "std":
+        ?>
+          <button type="button" class="btn-xs btn-info">Info</button>
+        <?php
+        break;
+
+      case "warn":
+        ?>
+          <button type="button" class="btn-xs btn-warning">Info</button>
+        <?php
+        break;
+
+      case "err":
+        ?>
+          <button type="button" class="btn-xs btn-danger">Info</button>
+        <?php
+        break;
+
+      case "fat":
+        ?>
+          <button type="button" class="btn-xs btn-danger">Info</button>
+        <?php
+        break;
+
+      default:
+        break;
+    }
   }
 
   // ========================================
-
   }
+
+// ========================================
+// ========================================
+// Fonction hors classe
+
+function drk_logger() {
+
+  $log = new drk_logger("1");
+  $log->DB_init(DB_URL, DB_NAME, DB_LOGIN, DB_PWD);
+  $msgs_array = $log->DB_read(0, 200);
+
+  //var_dump($msgs_array);
+
+  foreach ($msgs_array as $msg) {
+    $type   = $msg['type'];
+    $msgTxt = $msg['message'];
+    $time   = $msg['time'];
+
+    $log->icon($type);
+    echo(
+        ""
+        . date("j-n-Y G:i:s", $time)
+        . " - "
+        );
+    echo(" " . $msgTxt . "<br>");
+  }
+}
